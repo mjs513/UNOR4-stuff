@@ -409,7 +409,7 @@ void printDailyData() {
     weather.cloudCover[i]= dailyCloudCover[i].as<float>();
     weather.wmoCodes[i]  = dailyCode[i].as<float>();
     //try to refine wmo code 3
-    weather.wmoCodes[i] = refineWMOCode(weather.wmoCodes[i], weather.cloudCover[i], (float) dailyPop[i].as<int>());
+    weather.wmoCodes[i] = refineWMOCode(weather.wmoCodes[i], weather.cloudCover[i]);
 
     weather.precipSum[i] = dailyPrecip[i].as<float>();
     weather.rainSum[i]   = dailyRain[i].as<float>();
@@ -490,7 +490,7 @@ bool processIncomingStream(void (*outputFunc)()) {
 
 
 // refine open-meteo wmo code 3 grouping of 1,2,3 into single code
-int refineWMOCode(int originalCode, float cloudCoverMean, float popMax) {
+int refineWMOCode(int originalCode, float cloudCoverMean) {
   // Only refine dry non-precipitating codes (0 to 3)
   if (originalCode > 3) {
     return originalCode; // Keep rain, snow, fog, thunderstorm codes intact

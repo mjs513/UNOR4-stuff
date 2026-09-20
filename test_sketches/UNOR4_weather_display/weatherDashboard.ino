@@ -454,6 +454,7 @@ bool showKeyboard() {
     //Serial.print("New City: ");
     //Serial.println(weather_city);
     appState = FETCH_MAP_CITY_TO_LOCATION; 
+    updateWeatherLocation(); // Update our weather location
     return true;
   }
 

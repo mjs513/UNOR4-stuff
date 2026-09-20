@@ -65,6 +65,15 @@ const Breakpoint PM25_BREAKPOINTS[] = {
   { 325.5, 500.4,  401, 500 }
 };
 
+struct wifi_config_info {
+  char ssid[32];
+  char pass[32];
+  uint16_t checksum;
+};
+
+struct wifi_config_info wifi_config;
+
+
 
 /*************************************************/
 // Custom Colors (RGB565 format)

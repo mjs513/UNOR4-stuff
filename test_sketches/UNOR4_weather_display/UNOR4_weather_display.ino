@@ -1,3 +1,52 @@
+//=============================================================================
+// A Weather display app for the Arduino Uno R4 plus currently ST7796 display
+// This sketch was developed to test out different features of the
+// UNO R4
+//
+// Developed by: mjs513 and KurtE 
+//
+// It uses the boards built in Wifi controller to communicate with the
+// website open-meteo.com to request location, weather and air quality
+// information, which is returned in a JSON format, which is displayed
+// on the screen. 
+//
+// This sketch stores, the Wifi-security information as well as 
+// site location into the 8K EEPROM on the Arduino UNO R4
+//
+// Note: if the SSID/Password are incorrect, you can force it to
+// prompt for this information, by having the D2 pin jumpered to
+// ground at program startup.
+//
+//
+// This sketch also uses the touch controller on the display.  If you
+// click on the 5-day forecast area on a day, the display will be 
+// updated to show that day’s information, clicking the back button, 
+// returns you to the main screen.  If you click on the keyboard
+// icon toward the upper right, it brings up a keyboard entry
+// area which allows you to type in a new location, which can
+// be any location known by open-meteo, including zip codes.
+// Alternatively, you can also type in a new location using
+// the serial monitor.
+//
+// The Keyboard code is a modified version of:
+// https://github.com/KrisKasprzak/ILI9341_t3_Keypad
+//
+//
+// More information about this sketch can be found up at:
+// https://forum.arduino.cc/t/porting-wifi-app-that-displays-weather-from-giga-and-teensy-boards-to-uno-r4-wifi/1460156
+//
+// While doing this we have done similar programs on some different hardware
+// specifically on Teensy 4.x boards using different Wifi Setups.
+//     https://github.com/mjs513/Teensy-WiFi-Apps
+//
+// Thes different sketches are discussed on a few different forum threads:
+// https://forum.arduino.cc/t/playing-with-zephyr-v1-0-0-on-giga-and-wifi/1458103
+// https://forum.pjrc.com/index.php?threads/teensy-4-x-esp32-stack.78071/
+// https://forum.pjrc.com/index.php?threads/call-to-arms-teensy-wifi-true.77099/
+//
+// Warning: There are no guarantees or warrantees with this sketch.
+// Use it at your own risk or hopefully fun.
+//=============================================================================
 
 #define USE_COMPRESSED_IMAGE
 struct image_info {
@@ -15,12 +64,8 @@ struct image_info {
 #define orientation 1  // or 1 (landscape)
 
 #include <SPI.h>
-
+#include <EEPROM.h>
 #include <ST77XX_renesas.h>  // Hardware-specific library
-//#include <Adafruit_GFX.h>
-//#include <Adafruit_ST7796S.h>
-//#include "customFonts/FreeSans10pt7b.h"
-//#include <PNGdec.h>  // PNG decoder library by bitbank2
 
 // Config Touch Pins
 #if defined(XPT_TOUCH)
@@ -63,9 +108,9 @@ Adafruit_FT6206 ts = Adafruit_FT6206();
 // Allocated document capacity
 JsonDocument doc;
 
-#include "arduino_secrets.h"
-char ssid[] = SECRET_SSID;  // your network SSID (name)
-char pass[] = SECRET_PASS;  // your network password (use for WPA, or use as key for WEP)
+//#include "arduino_secrets.h"
+//char ssid[] = SECRET_SSID;  // your network SSID (name)
+//char pass[] = SECRET_PASS;  // your network password (use for WPA, or use as key for WEP)
 int keyIndex = 0;           // your network key Index number (needed only for WEP)
 
 int status = WL_IDLE_STATUS;
@@ -84,12 +129,7 @@ const int port = 80;
 constexpr uint32_t kDHCPTimeout = 15000;
 
 
-#include "location.h"
-#ifndef DEFAULT_CITY
-#define DEFAULT_CITY "Los Angeles"
-#endif
-
-String weather_city = DEFAULT_CITY;
+String weather_city = "Disneyland";
 String weather_time_zone = "";
 double weather_latitude = 0;
 double weather_longitude = 0;
@@ -194,11 +234,15 @@ void setup() {
   }
 
   // attempt to connect to WiFi network:
+  retrieveWiFiConfigInfo();
+  retrieveWeatherLocation();
+
   while (status != WL_CONNECTED) {
     Serial.print("Attempting to connect to SSID: ");
-    Serial.println(ssid);
+    Serial.println(wifi_config.ssid);
     // Connect to WPA/WPA2 network. Change this line if using open or WEP network:
-    status = WiFi.begin(ssid, pass);
+//    status = WiFi.begin(ssid, 20);
+    status = WiFi.begin(wifi_config.ssid, wifi_config.pass);
 
     // wait 10 seconds for connection:
     delay(10000);
@@ -450,6 +494,7 @@ void loop() {
     Serial.print("New City: ");
     Serial.println(weather_city);
     appState = FETCH_MAP_CITY_TO_LOCATION;
+    updateWeatherLocation(); // save this out to EEPROM
   }
 
   // see if we timed out and should start a new read cycle
